@@ -15,7 +15,7 @@ class EvaluateScreenHealth implements ShouldQueue
         $raise = app(RaiseOperationalEvent::class);
         foreach (Screen::all() as $screen) {
             $age = $screen->last_seen_at
-                ? now()->diffInSeconds($screen->last_seen_at)
+                ? $screen->last_seen_at->diffInSeconds(now())
                 : PHP_INT_MAX;
 
             if ($age > 600) {

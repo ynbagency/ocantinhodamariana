@@ -6,9 +6,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
-        with: {php-version: '8.3'}
+        with: {php-version: '8.3', extensions: 'pdo_sqlite, mbstring, intl, gd', tools: composer}
+      - name: Install locked dependencies
+        run: composer install --no-interaction --prefer-dist
+      - name: Laravel integration tests
+        run: php vendor/phpunit/phpunit/phpunit
       - name: PHP syntax
-        run: find app routes database -name '*.php' -print0 | xargs -0 -n1 php -l
+        run: find app routes database bootstrap config tests -name '*.php' -print0 | xargs -0 -n1 php -l
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Public cache policy tests
+        run: node --test tests/service-worker.test.cjs
       - name: Python signage tests
         run: PYTHONPATH=device/agent python3 -m unittest discover -s device/agent/tests -v
       - name: Required production files

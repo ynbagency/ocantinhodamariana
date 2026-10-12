@@ -13,16 +13,17 @@ use App\Http\Middleware\AuthenticateSignageDevice;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health',HealthController::class)->name('health');
-Route::get('/',[DailyMenuController::class,'public'])->name('home');
-Route::get('/hoje',[DailyMenuController::class,'public'])->name('today');
+Route::get('/',[PublicSiteController::class,'home'])->name('home');
+Route::get('/hoje',[PublicSiteController::class,'home'])->name('today');
 
 Route::middleware('guest')->group(function(){
     Route::get('/entrar',[LoginController::class,'create'])->name('login');
-    Route::post('/entrar',[LoginController::class,'store'])->name('login.store');
+    Route::post('/entrar',[LoginController::class,'store'])->middleware('throttle:5,1')->name('login.store');
 });
 Route::post('/sair',[LoginController::class,'destroy'])->middleware('auth')->name('logout');
 
 Route::middleware(AuthenticateSignageDevice::class)->group(function(){
+    Route::get('/api/signage/bundle/{digest}/{filename}',[SignageController::class,'bundle'])->name('signage.bundle');
     Route::get('/api/signage/manifest/{deviceId}',[SignageController::class,'manifest'])->name('signage.manifest');
     Route::get('/api/signage/release/{publication}',[SignageController::class,'release'])->name('signage.release');
     Route::post('/api/signage/heartbeat/{deviceId}',[SignageController::class,'heartbeat'])->name('signage.heartbeat');

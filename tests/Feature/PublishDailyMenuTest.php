@@ -13,7 +13,7 @@ class PublishDailyMenuTest extends TestCase
 
     public function test_publishing_creates_immutable_snapshot_and_channel_states(): void
     {
-        $user = User::factory()->create(['role' => 'operator']);
+        $user = User::create(['name'=>'Operador','email'=>'operator@example.test','password'=>'test-password','role'=>'operator']);
         $menu = DailyMenu::create(['service_date' => today(), 'created_by' => $user->id, 'price_cents' => 1250]);
         $menu->items()->create(['category'=>'prato','name'=>'Prato teste','position'=>0,'available'=>true]);
 

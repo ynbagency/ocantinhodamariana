@@ -1,5 +1,5 @@
 from pathlib import Path
-import json, os, shutil, hashlib
+import json, os, shutil, hashlib, re
 
 class Store:
     def __init__(self, root: Path):
@@ -11,7 +11,15 @@ class Store:
         try: return json.loads(p.read_text())['version']
         except Exception: return None
     def stage(self, manifest, fetch):
-        version=str(manifest['version']); staging=self.root/f'.staging-{version}'
+        version=str(manifest['version'])
+        if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]{0,159}', version):
+            raise ValueError('invalid release version')
+        if version == self.version(): return version
+        for a in manifest.get('assets',[]):
+            value=a['path']
+            if not isinstance(value,str) or not value or '\\' in value or ':' in value or value.startswith('/') or any(p in ('','..','.') for p in value.split('/')) or value=='manifest.json':
+                raise ValueError('invalid asset path')
+        staging=self.root/f'.staging-{version}'
         shutil.rmtree(staging, ignore_errors=True); staging.mkdir(parents=True)
         for a in manifest.get('assets',[]):
             rel=Path(a['path']); dest=staging/rel; dest.parent.mkdir(parents=True,exist_ok=True)

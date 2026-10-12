@@ -27,6 +27,8 @@ Meta/social publishing is intentionally asynchronous and cannot block website or
 - `tests/` application test area
 
 ## Local bootstrap
+Current integration evidence and remaining acceptance work: [Integration status](docs/INTEGRATION_STATUS.md).
+
 This repository is a production-oriented scaffold assembled through Gate 10. It does **not** include
 `vendor/`, `.env` or production credentials.
 
@@ -47,6 +49,15 @@ Then run the project-specific readiness check when production configuration is p
 ```bash
 php artisan cantinho:readiness
 ```
+
+## Integration tests
+
+```bash
+php vendor/phpunit/phpunit/phpunit
+node --test tests/service-worker.test.cjs
+```
+
+PHP tests use an isolated SQLite in-memory database. The signage symlink activation tests must run on Linux.
 
 ## Raspberry regression tests
 

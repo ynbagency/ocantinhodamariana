@@ -14,7 +14,8 @@ class OperationController
         $menu = DailyMenu::with('items')->whereDate('service_date', today())->first();
         $publication = $menu ? Publication::with('attempts')->where('daily_menu_id',$menu->id)->latest('version')->first() : null;
         $screens = Screen::orderBy('name')->get();
-        return view('operation.dashboard', compact('menu','publication','screens'));
+        $snapshot=$publication?->payload;
+        return view('operation.dashboard', compact('menu','publication','screens','snapshot'));
     }
 
     public function preview(Request $request, string $channel)

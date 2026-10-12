@@ -24,31 +24,48 @@ class SignageController
         ])->header('Cache-Control','no-store');
 
         $editorial=$playlist->build();
-        $html=$this->renderReleaseHtml($publication->payload,$editorial);
-        $assets=[[
-            'path'=>'index.html',
-            'url'=>route('signage.release',['publication'=>$publication->id],false),
-            'sha256'=>hash('sha256',$html),
-        ]];
-
-        foreach($editorial as $slide){
+        $assets=[];
+        foreach($editorial as &$slide){
             if(empty($slide['media']['id'])) continue;
             $asset=MediaAsset::find($slide['media']['id']);
-            if(!$asset) continue;
+            if(!$asset) { $slide['media']=null; continue; }
             $path=$asset->preferredPath('signage');
-            if(!Storage::disk($asset->disk)->exists($path)) continue;
-            $assets[]=[
-                'path'=>$slide['media']['local_path'],
-                'url'=>route('signage.media',['asset'=>$asset->id,'variant'=>'signage'],false),
-                'sha256'=>hash('sha256',Storage::disk($asset->disk)->get($path)),
-            ];
+            if(!Storage::disk($asset->disk)->exists($path)) { $slide['media']=null; continue; }
+            $assets[$slide['media']['local_path']]=$this->snapshotAsset(
+                $slide['media']['local_path'], Storage::disk($asset->disk)->get($path)
+            );
         }
+        unset($slide);
+        $assets['index.html']=$this->snapshotAsset('index.html',$this->renderReleaseHtml($publication->payload,$editorial));
+        ksort($assets);
+        $assets=array_values($assets);
+        $version='bundle-'.hash('sha256',json_encode($assets,JSON_THROW_ON_ERROR));
 
         return response()->json([
-            'schema'=>1,'version'=>'daily-menu-'.$publication->id.'-v'.$publication->version,
+            'schema'=>1,'version'=>$version,
             'generated_at'=>now()->toIso8601String(),'layout'=>'today',
             'content'=>array_merge($publication->payload,['editorial'=>$editorial]),'assets'=>$assets,
         ])->header('Cache-Control','no-store');
+    }
+
+    private function snapshotAsset(string $path, string $bytes): array
+    {
+        $digest=hash('sha256',$bytes);
+        $disk=Storage::disk('local');
+        $stored='signage/blobs/'.$digest;
+        if(!$disk->exists($stored)) $disk->put($stored,$bytes);
+        return ['path'=>$path,'url'=>route('signage.bundle',['digest'=>$digest,'filename'=>basename($path)],false),'sha256'=>$digest];
+    }
+
+    public function bundle(string $digest, string $filename): Response
+    {
+        abort_unless(preg_match('/^[a-f0-9]{64}$/D',$digest),404);
+        $disk=Storage::disk('local'); $path='signage/blobs/'.$digest;
+        abort_unless($disk->exists($path),404);
+        $mime=match(strtolower(pathinfo($filename,PATHINFO_EXTENSION))){
+            'html'=>'text/html; charset=utf-8','png'=>'image/png','webp'=>'image/webp',default=>'image/jpeg'
+        };
+        return response($disk->get($path),200,['Content-Type'=>$mime,'Cache-Control'=>'private, no-store']);
     }
 
     public function release(Request $request, Publication $publication): Response

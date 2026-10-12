@@ -6,6 +6,8 @@ id cantinho >/dev/null 2>&1 || useradd --system --create-home --groups video,aud
 install -d -o cantinho -g cantinho /var/lib/cantinho/releases /etc/cantinho "$APP"
 cp -a "$(cd "$(dirname "$0")/../.." && pwd)"/* "$APP"/
 [ -f /etc/cantinho/device.json ] || install -m 600 "$APP/device/config/device.example.json" /etc/cantinho/device.json
+chown cantinho:cantinho /etc/cantinho/device.json
+chmod 600 /etc/cantinho/device.json
 install -m 644 "$APP/device/systemd/cantinho-agent.service" /etc/systemd/system/
 install -m 644 "$APP/device/systemd/cantinho-kiosk.service" /etc/systemd/system/
 systemctl daemon-reload

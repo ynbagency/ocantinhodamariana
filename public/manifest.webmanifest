@@ -1,0 +1,9 @@
+{
+  "name": "O Cantinho da Mariana",
+  "short_name": "O Cantinho",
+  "start_url": "/hoje",
+  "display": "standalone",
+  "background_color": "#F7F0E4",
+  "theme_color": "#5B1715",
+  "lang": "pt-PT"
+}

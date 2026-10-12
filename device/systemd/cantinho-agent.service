@@ -1,0 +1,15 @@
+[Unit]
+Description=O Cantinho da Mariana Signage Agent
+After=network.target
+
+[Service]
+Type=simple
+User=cantinho
+WorkingDirectory=/opt/cantinho/device/agent
+ExecStart=/usr/bin/python3 -m app.main
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

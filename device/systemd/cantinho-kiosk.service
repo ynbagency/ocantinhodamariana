@@ -1,0 +1,14 @@
+[Unit]
+Description=O Cantinho da Mariana Chromium Kiosk
+After=graphical.target cantinho-agent.service
+Wants=cantinho-agent.service
+
+[Service]
+User=cantinho
+Environment=DISPLAY=:0
+ExecStart=/usr/bin/chromium --kiosk --no-first-run --disable-session-crashed-bubble http://127.0.0.1:8765/
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=graphical.target

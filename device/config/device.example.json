@@ -1,0 +1,8 @@
+{
+  "server_url": "https://example.invalid",
+  "device_id": "cantinho-tv-01",
+  "device_token": "REPLACE_WITH_UNIQUE_SECRET",
+  "data_dir": "/var/lib/cantinho",
+  "sync_seconds": 60,
+  "port": 8765
+}

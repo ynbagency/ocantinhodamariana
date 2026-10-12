@@ -1,0 +1,17 @@
+# Raspberry Pi field checklist
+- High Endurance microSD or USB SSD installed.
+- Official PSU and ventilated case.
+- Unique device ID and unique token; never clone tokens.
+- Hostname labelled physically.
+- Correct timezone Europe/Lisbon.
+- Automatic login only for restricted kiosk session.
+- SSH keys only; password login disabled where remote support is enabled.
+- Agent/kiosk services enabled.
+- Local `/health` and `/version` OK.
+- First content release fully cached.
+- Network-loss test passed.
+- Hard power-cycle test passed at least three times.
+- TV restores power and HDMI input.
+- TV sleep/screensaver disabled.
+- Remote support path documented.
+- Device/token recovery procedure stored with technical support.

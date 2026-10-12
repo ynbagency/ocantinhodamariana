@@ -1,0 +1,22 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: {php-version: '8.3'}
+      - name: PHP syntax
+        run: find app routes database -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Python signage tests
+        run: PYTHONPATH=device/agent python3 -m unittest discover -s device/agent/tests -v
+      - name: Required production files
+        run: test -f ops/deploy.sh && test -f ops/backup.sh && test -f docs/MASTER_SPEC.md
+
+      - name: Shell syntax
+        run: bash -n ops/*.sh device/scripts/*.sh
+      - name: Reject committed environment/secrets
+        run: |
+          test ! -f .env
+          ! git ls-files | grep -E '(^|/)(id_rsa|id_ed25519|.*\.sql(\.gz)?|.*\.pem)$'

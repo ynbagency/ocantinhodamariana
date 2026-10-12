@@ -1,0 +1,3 @@
+<?php
+namespace Database\Seeders; use App\Models\RestaurantSetting; use App\Models\User; use Illuminate\Database\Seeder; use Illuminate\Support\Facades\Hash;
+class ProductionBootstrapSeeder extends Seeder {public function run():void{foreach(['name'=>'O Cantinho da Mariana','locality'=>'Condeixa-a-Nova'] as $k=>$v)RestaurantSetting::firstOrCreate(['key'=>$k],['value'=>$v,'public'=>true]);$email=env('BOOTSTRAP_ADMIN_EMAIL');$password=env('BOOTSTRAP_ADMIN_PASSWORD');if($email&&$password)User::updateOrCreate(['email'=>$email],['name'=>'Administrador','password'=>Hash::make($password),'role'=>'admin']);}}

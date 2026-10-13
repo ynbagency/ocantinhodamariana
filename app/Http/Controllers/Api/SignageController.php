@@ -111,6 +111,7 @@ class SignageController
             $items.='<div class="dish"><span>'.$esc($i['name']??'').'</span></div>';
         }
         $price=isset($p['price_cents']) && $p['price_cents']!==null ? number_format($p['price_cents']/100,2,',','.').' €' : '';
+        if($items==='') { $items='<div class="dish">Pergunte-nos pelos pratos disponíveis</div>'; $price=''; }
         $slides=$editorial ?: [[
             'type'=>'brand','eyebrow'=>'O CANTINHO DA MARIANA',
             'title'=>'Comida boa. Conversas melhores.','body'=>'','duration'=>12,'media'=>null

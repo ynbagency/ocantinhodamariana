@@ -38,17 +38,26 @@ class DailyMenuController
             'dish1' => 'nullable|string|max:160',
             'dish2' => 'nullable|string|max:160',
             'price' => 'nullable|numeric|min:0|max:9999',
+            'intent' => 'nullable|in:draft,publish',
+            'soup_available' => 'nullable|boolean',
+            'dish1_available' => 'nullable|boolean',
+            'dish2_available' => 'nullable|boolean',
         ]);
+        if(($data['intent']??'draft')==='publish' && !collect(['soup','dish1','dish2'])->contains(fn($key)=>filled($data[$key]??null) && ($data[$key.'_available']??true))) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['publish'=>'É necessário pelo menos um prato disponível.']);
+        }
 
         DB::transaction(function () use ($data, $request) {
             $menu = DailyMenu::firstOrCreate(
                 ['service_date' => today()->toDateString()],
                 ['created_by' => $request->user()->id]
             );
+            $menu=DailyMenu::whereKey($menu->id)->lockForUpdate()->firstOrFail();
             // A published snapshot stays immutable and live while the operator edits
             // the next draft. `status=draft` refers to the working copy only.
             $menu->update([
                 'status' => 'draft',
+                'scheduled_at' => null,
                 'price_cents' => isset($data['price']) ? (int) round($data['price'] * 100) : null,
             ]);
             $menu->items()->delete();
@@ -59,13 +68,15 @@ class DailyMenuController
                         'category' => $category,
                         'name' => $data[$key],
                         'position' => $position++,
-                        'available' => true,
+                        'available' => (bool)($data[$key.'_available']??true),
                     ]);
                 }
             }
+            if(($data['intent']??'draft')==='publish') app(PublishDailyMenu::class)->execute($menu);
         });
 
-        return redirect()->route('operation.edit')->with('success', 'Rascunho guardado. A versão pública anterior mantém-se ativa.');
+        if(($data['intent']??'draft')==='publish') return redirect()->route('operation.edit')->with('success','Pratos guardados e publicados no site e no conteúdo da TV.');
+        return redirect()->route('operation.edit')->with('success', 'Rascunho guardado. Qualquer agendamento anterior foi cancelado; a versão pública mantém-se ativa.');
     }
 
     public function publish(Request $request, PublishDailyMenu $publisher)
@@ -79,5 +90,51 @@ class DailyMenuController
         }
 
         return redirect()->route('operation.edit')->with('success', 'Publicado no site e na TV. Redes sociais ficam pendentes até estarem configuradas.');
+    }
+
+    public function copyYesterday(Request $request)
+    {
+        DB::transaction(function () use ($request) {
+            $source=DailyMenu::whereDate('service_date',today()->subDay())->first();
+            $snapshot=$source ? Publication::where('daily_menu_id',$source->id)->where('status','published')->latest('version')->first()?->payload : null;
+            if(!$snapshot) throw \Illuminate\Validation\ValidationException::withMessages(['copy'=>'Ontem não foi publicado nenhum menu.']);
+            $menu=DailyMenu::firstOrCreate(['service_date'=>today()->toDateString()],['created_by'=>$request->user()->id]);
+            $menu=DailyMenu::whereKey($menu->id)->lockForUpdate()->firstOrFail();
+            if($menu->items()->exists()) throw \Illuminate\Validation\ValidationException::withMessages(['copy'=>'O rascunho de hoje já contém pratos. A cópia não o substituiu.']);
+            $menu->update(['price_cents'=>$snapshot['price_cents']??null,'status'=>'draft','scheduled_at'=>null]);
+            foreach($snapshot['items'] as $item) $menu->items()->create(array_replace($item,['available'=>true]));
+            app(\App\Domain\Operations\Audit::class)->write('daily-menu.copied-yesterday',$menu,[], $request);
+        });
+        return back()->with('success','Menu de ontem copiado para o rascunho. Reveja os pratos antes de publicar.');
+    }
+
+    public function schedule(Request $request)
+    {
+        $data=$request->validate(['scheduled_at'=>'required|date|after:now|before:tomorrow']);
+        DB::transaction(function () use ($data,$request) {
+            $menu=DailyMenu::whereDate('service_date',today())->lockForUpdate()->firstOrFail();
+            if(!$menu->items()->where('available',true)->exists()) throw \Illuminate\Validation\ValidationException::withMessages(['scheduled_at'=>'Guarde pelo menos um prato disponível antes de agendar.']);
+            $menu->update(['scheduled_at'=>\Illuminate\Support\Carbon::parse($data['scheduled_at']),'status'=>'scheduled']);
+            app(\App\Domain\Operations\Audit::class)->write('daily-menu.scheduled',$menu,['scheduled_at'=>$menu->scheduled_at->toIso8601String()],$request);
+        });
+        return back()->with('success','Publicação agendada. Editar e guardar o rascunho cancela este agendamento.');
+    }
+
+    public function cancelSchedule(Request $request)
+    {
+        DB::transaction(function() use($request) {
+            $menu=DailyMenu::whereDate('service_date',today())->whereNotNull('scheduled_at')->lockForUpdate()->first();
+            if(!$menu) return;
+            $menu->update(['scheduled_at'=>null,'status'=>'draft']);
+            app(\App\Domain\Operations\Audit::class)->write('daily-menu.schedule-cancelled',$menu,[],$request);
+        });
+        return back()->with('success','Agendamento cancelado.');
+    }
+
+    public function availability(Request $request, \App\Domain\Publishing\SetPublishedAvailability $action)
+    {
+        $data=$request->validate(['version'=>'required|integer|min:1','position'=>'required|integer|min:0','available'=>'required|boolean']);
+        $action->execute($data['version'],$data['position'],(bool)$data['available']);
+        return back()->with('success','Disponibilidade atualizada no site e no conteúdo da TV.');
     }
 }

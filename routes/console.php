@@ -3,3 +3,4 @@ use App\Jobs\EvaluateScreenHealth; use App\Jobs\ExpireEditorialContent; use Illu
 Schedule::job(new EvaluateScreenHealth)->everyFiveMinutes()->withoutOverlapping();
 Schedule::job(new ExpireEditorialContent)->everyMinute()->withoutOverlapping();
 Schedule::command('queue:prune-failed --hours=168')->daily();
+Schedule::command('cantinho:publish-scheduled')->everyMinute()->withoutOverlapping();

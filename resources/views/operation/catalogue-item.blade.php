@@ -10,7 +10,7 @@
 <label class="span-2">Descrição<textarea name="description" maxlength="1000" rows="3">{{ old('description',$item->description) }}</textarea></label>
 <label>Preço (€)<input type="number" step="0.01" min="0" max="9999" inputmode="decimal" name="price" value="{{ old('price',$item->price_cents!==null?number_format($item->price_cents/100,2,'.',''):'') }}"></label>
 <label>Fotografia<select name="media_asset_id"><option value="">Sem fotografia</option>@foreach($media as $asset)<option value="{{ $asset->id }}" @selected(old('media_asset_id',$item->media_asset_id)==$asset->id)>{{ $asset->title?:'Fotografia '.$asset->id }}</option>@endforeach</select><a href="{{ route('operation.media') }}">Adicionar fotografias à biblioteca</a></label>
-@if($item->media)<img class="catalogue-photo" src="{{ Storage::disk($item->media->disk)->url($item->media->preferredPath('web')) }}" alt="{{ $item->name }}">@endif
+@if($item->media)<img class="catalogue-photo" src="{{ $item->media->publicUrl('web') }}" alt="{{ $item->name }}">@endif
 <fieldset class="span-2 allergen-fields"><legend>Alergénios</legend><p class="muted">Assinale apenas informação confirmada. Sem seleção, a informação fica por confirmar.</p><div class="allergen-grid">@foreach($allergenLabels as $code=>$label)<label class="availability-check"><input type="checkbox" name="allergens[]" value="{{ $code }}" @checked(in_array($code,old('allergens',$item->allergens??[])))>{{ $label }}</label>@endforeach</div></fieldset>
 <input type="hidden" name="active" value="0"><label class="availability-check"><input type="checkbox" name="active" value="1" @checked(old('active',$item->active))> Prato ativo na carta</label>
 <div><button class="btn primary">Guardar prato</button></div></form>

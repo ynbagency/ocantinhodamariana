@@ -13,7 +13,7 @@
 <section class="permanent-category"><h2>{{ $category->name }}</h2>
 @foreach($category->items as $item)
 <article class="permanent-item">
-@if($item->media)<img src="{{ Storage::disk($item->media->disk)->url($item->media->preferredPath('web')) }}" alt="{{ $item->name }}" loading="lazy">@endif
+@if($item->media)<img src="{{ $item->media->publicUrl('web') }}" alt="{{ $item->name }}" loading="lazy">@endif
 <div><h3>{{ $item->name }}</h3>@if($item->description)<p>{{ $item->description }}</p>@endif
 @if($item->price_cents!==null)<strong>{{ number_format($item->price_cents/100,2,',',' ') }} €</strong>@endif
 <p class="muted allergen-note">Alergénios: {{ $item->allergens?implode(', ',\App\Domain\Restaurant\Allergens::labels($item->allergens)):'informação por confirmar' }}.</p></div>

@@ -13,6 +13,7 @@ use App\Http\Middleware\AuthenticateSignageDevice;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health',HealthController::class)->name('health');
+Route::get('/media/{asset}/{variant}',\App\Http\Controllers\PublicMediaController::class)->name('media.public');
 Route::get('/',[PublicSiteController::class,'home'])->name('home');
 Route::get('/hoje',[PublicSiteController::class,'home'])->name('today');
 

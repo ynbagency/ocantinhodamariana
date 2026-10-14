@@ -16,7 +16,7 @@
 <p class="muted">Ocultar uma categoria retira os seus pratos da carta pública e da seleção diária. As publicações anteriores mantêm-se.</p></section>
 <section class="card"><h2>Pratos</h2>
 @forelse($items as $item)
-<article class="content-row"><div class="content-main">@if($item->media)<img class="content-thumb" src="{{ Storage::disk($item->media->disk)->url($item->media->preferredPath('thumb')) }}" alt="{{ $item->name }}">@endif<div><small>{{ $item->category->name }} · {{ $item->active?'Ativo':'Oculto' }}</small><strong>{{ $item->name }}</strong><p>{{ $item->description }}</p><p>{{ $item->price_cents!==null?number_format($item->price_cents/100,2,',',' ').' €':'Preço por confirmar' }}</p></div></div><a class="btn" href="{{ route('operation.catalogue.edit',$item) }}">Editar prato</a></article>
+<article class="content-row"><div class="content-main">@if($item->media)<img class="content-thumb" src="{{ $item->media->publicUrl('thumb') }}" alt="{{ $item->name }}">@endif<div><small>{{ $item->category->name }} · {{ $item->active?'Ativo':'Oculto' }}</small><strong>{{ $item->name }}</strong><p>{{ $item->description }}</p><p>{{ $item->price_cents!==null?number_format($item->price_cents/100,2,',',' ').' €':'Preço por confirmar' }}</p></div></div><a class="btn" href="{{ route('operation.catalogue.edit',$item) }}">Editar prato</a></article>
 @empty<p>A carta ainda não tem pratos. Crie uma categoria e adicione o primeiro prato.</p>@endforelse
 {{ $items->links() }}</section>
 @endsection

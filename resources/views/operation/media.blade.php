@@ -16,7 +16,7 @@
 <section class="card"><div class="section-head"><div><h2>Biblioteca</h2><p class="muted">O original é preservado. O sistema cria versões para web, miniatura e TV.</p></div></div>
 <div class="media-grid">@forelse($assets as $asset)
 <article class="media-card">
-<img src="{{ Storage::disk($asset->disk)->url($asset->preferredPath('thumb')) }}" alt="">
+<img src="{{ $asset->publicUrl('thumb') }}" alt="">
 <div class="media-meta"><strong>{{ $asset->title }}</strong><small>{{ $asset->width }}×{{ $asset->height }} · {{ number_format($asset->size_bytes/1024/1024,1,',','.') }} MB</small>
 <form method="post" action="{{ route('operation.media.focus',$asset) }}" class="focus-form">@csrf
 <label>X<input type="number" name="focal_x" min="0" max="1" step=".01" value="{{ $asset->focal_x }}"></label>

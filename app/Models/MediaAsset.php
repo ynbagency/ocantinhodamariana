@@ -24,4 +24,8 @@ class MediaAsset extends Model
             default => $this->path,
         };
     }
+    public function publicUrl(string $variant='web'): string
+    {
+        return $this->disk==='public' ? route('media.public',['asset'=>$this->id,'variant'=>$variant],false) : \Illuminate\Support\Facades\Storage::disk($this->disk)->url($this->preferredPath($variant));
+    }
 }

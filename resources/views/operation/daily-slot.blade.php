@@ -7,5 +7,5 @@
 <label>{{ $label }}<input name="{{ $key }}" value="{{ old($key,$current?->name) }}" autocomplete="off" maxlength="160" placeholder="Nome do prato" data-slot-name="{{ $key }}"></label>
 <input type="hidden" name="{{ $key }}_available" value="0"><label class="availability-check"><input type="checkbox" name="{{ $key }}_available" value="1" @checked(old($key.'_available',$current?->available??true))> {{ $label }} disponível</label>
 <label>Fotografia · {{ $label }}<select class="daily-picker" name="{{ $key }}_photo_id" data-slot-photo="{{ $key }}"><option value="">Sem fotografia</option>@foreach($media as $asset)<option value="{{ $asset->id }}" @selected(old($key.'_photo_id',$current?->media_asset_id)==$asset->id)>{{ $asset->title?:'Fotografia '.$asset->id }}</option>@endforeach</select></label>
-@if($current?->media)<img class="catalogue-photo" src="{{ Storage::disk($current->media->disk)->url($current->media->preferredPath('thumb')) }}" alt="{{ $current->name }}">@endif
+@if($current?->media)<img class="catalogue-photo" src="{{ $current->media->publicUrl('thumb') }}" alt="{{ $current->name }}">@endif
 </div>

@@ -9,7 +9,7 @@ async function main(){
  const artifactDir=path.join(root,'storage/framework/testing/browser');
  fs.mkdirSync(artifactDir,{recursive:true});
  const db=path.join(artifactDir,`mobile-${process.pid}.sqlite`); fs.writeFileSync(db,'');
- const env={...process.env,APP_ENV:'local',APP_DEBUG:'false',APP_KEY:'base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',APP_URL:'http://127.0.0.1:8011',DB_CONNECTION:'sqlite',DB_DATABASE:db,CACHE_STORE:'array',SESSION_DRIVER:'database',QUEUE_CONNECTION:'sync'};
+ const env={...process.env,APP_ENV:'local',APP_DEBUG:'false',APP_KEY:'base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',APP_URL:'http://127.0.0.1:8011',DB_CONNECTION:'sqlite',DB_DATABASE:db,CACHE_STORE:'array',SESSION_DRIVER:'database',QUEUE_CONNECTION:'sync',PUBLIC_MEDIA_ROOT:path.join(artifactDir,'media-'+process.pid)};
  const run=(args)=>{const r=spawnSync('php',args,{cwd:root,env,encoding:'utf8'});if(r.status!==0)throw Error(r.stderr||r.stdout);};
  run(['artisan','migrate','--force','--no-interaction']); run(['tests/browser/seed.php']);
  const server=spawn('php',['artisan','serve','--host=127.0.0.1','--port=8011','--no-reload'],{cwd:root,env,stdio:'ignore',windowsHide:true,detached:process.platform!=='win32'});

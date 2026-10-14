@@ -51,6 +51,8 @@ php artisan cantinho:readiness
 ```
 
 ## Integration tests
+Backoffice access and account setup: [Backoffice](docs/BACKOFFICE.md).
+
 
 ```bash
 php vendor/phpunit/phpunit/phpunit

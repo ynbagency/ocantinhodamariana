@@ -1,7 +1,8 @@
-<!doctype html>
-<html lang="pt">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/app.css"><title>Pratos de hoje — Operação</title></head>
-<body><main class="shell">
+@extends('operation.layout')
+@section('title','Pratos de hoje')
+@section('shell','shell')
+@section('content')
+
 <a href="{{ route('operation.dashboard') }}">← Início</a>
 <div class="brand" style="margin-top:24px">O CANTINHO DA MARIANA</div>
 <h1>Pratos de hoje</h1><p class="muted">{{ now()->translatedFormat('l, d F Y') }}</p>
@@ -14,12 +15,9 @@
 @endif
 <section class="card"><h2>Preparar menu</h2>
 <form method="post" action="{{ route('operation.store') }}">@csrf
-<label>Sopa<input name="soup" value="{{ old('soup',$soup?->name) }}" autocomplete="off" maxlength="160" placeholder="Ex.: Sopa de legumes"></label>
-<input type="hidden" name="soup_available" value="0"><label class="availability-check"><input type="checkbox" name="soup_available" value="1" @checked(old('soup_available',$soup?->available??true))> Sopa disponível</label>
-<label>Prato 1<input name="dish1" value="{{ old('dish1',$dishes->get(0)?->name) }}" autocomplete="off" maxlength="160" placeholder="Nome do prato"></label>
-<input type="hidden" name="dish1_available" value="0"><label class="availability-check"><input type="checkbox" name="dish1_available" value="1" @checked(old('dish1_available',$dishes->get(0)?->available??true))> Prato 1 disponível</label>
-<label>Prato 2<input name="dish2" value="{{ old('dish2',$dishes->get(1)?->name) }}" autocomplete="off" maxlength="160" placeholder="Nome do prato"></label>
-<input type="hidden" name="dish2_available" value="0"><label class="availability-check"><input type="checkbox" name="dish2_available" value="1" @checked(old('dish2_available',$dishes->get(1)?->available??true))> Prato 2 disponível</label>
+@include('operation.daily-slot',['key'=>'soup','label'=>'Sopa','current'=>$soup])
+@include('operation.daily-slot',['key'=>'dish1','label'=>'Prato 1','current'=>$dishes->get(0)])
+@include('operation.daily-slot',['key'=>'dish2','label'=>'Prato 2','current'=>$dishes->get(1)])
 <label>Preço (€)<input type="number" inputmode="decimal" step="0.01" min="0" name="price" value="{{ old('price',$menu->price_cents===null?'':number_format($menu->price_cents/100,2,'.','')) }}" placeholder="0,00"></label>
 <div class="grid grid2"><button class="btn soft" name="intent" value="draft">Guardar rascunho</button><button class="btn primary" name="intent" value="publish">Publicar agora</button></div>
 </form>
@@ -49,7 +47,9 @@
 @endforeach
 <p class="muted" style="margin-top:12px">A disponibilidade altera apenas o menu publicado. O rascunho em preparação mantém-se separado.</p>
 @foreach($publication->attempts as $attempt)
-<div class="statusrow"><span>{{ ucfirst($attempt->channel) }}</span><span class="badge {{ $attempt->status==='published'?'ok':'warn' }}"><span class="dot"></span>{{ $attempt->status==='published'?'Publicado':'Pendente' }}</span></div>
+<div class="statusrow"><span>{{ ['website'=>'Site','signage'=>'Conteúdo da TV','facebook'=>'Facebook','instagram'=>'Instagram'][$attempt->channel]??'Canal' }}</span><span class="badge {{ $attempt->status==='published'?'ok':'warn' }}"><span class="dot"></span>{{ $attempt->status==='published'?'Publicado':'Pendente' }}</span></div>
 @endforeach
 @else<p class="muted">Ainda não existe uma publicação para hoje.</p>@endif
-</section></main></body></html>
+</section>
+<script src="/daily-menu.js" defer></script>
+@endsection

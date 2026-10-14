@@ -37,6 +37,13 @@ Route::get('/contactos',[PublicSiteController::class,'contacts'])->name('public.
 Route::get('/fidelizacao',[PublicSiteController::class,'loyalty'])->name('public.loyalty');
 
 Route::middleware(['auth','operator'])->prefix('operacao')->name('operation.')->group(function(){
+    Route::get('/carta',[\App\Http\Controllers\Operation\MenuCatalogueController::class,'index'])->name('catalogue');
+    Route::post('/carta/categorias',[\App\Http\Controllers\Operation\MenuCatalogueController::class,'category'])->name('catalogue.category');
+    Route::post('/carta/categorias/{category}',[\App\Http\Controllers\Operation\MenuCatalogueController::class,'updateCategory'])->name('catalogue.category.update');
+    Route::get('/carta/novo',[\App\Http\Controllers\Operation\MenuCatalogueController::class,'create'])->name('catalogue.create');
+    Route::post('/carta/pratos',[\App\Http\Controllers\Operation\MenuCatalogueController::class,'store'])->name('catalogue.store');
+    Route::get('/carta/pratos/{item}',[\App\Http\Controllers\Operation\MenuCatalogueController::class,'edit'])->name('catalogue.edit');
+    Route::post('/carta/pratos/{item}',[\App\Http\Controllers\Operation\MenuCatalogueController::class,'update'])->name('catalogue.update');
     Route::get('/definicoes',[RestaurantSettingsController::class,'edit'])->name('settings');
     Route::post('/definicoes',[RestaurantSettingsController::class,'update'])->name('settings.update');
     Route::get('/health',HealthController::class)->name('health');

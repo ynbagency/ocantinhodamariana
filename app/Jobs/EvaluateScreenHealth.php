@@ -13,7 +13,7 @@ class EvaluateScreenHealth implements ShouldQueue
     public function handle(): void
     {
         $raise = app(RaiseOperationalEvent::class);
-        foreach (Screen::all() as $screen) {
+        foreach (Screen::where('enabled',true)->get() as $screen) {
             $age = $screen->last_seen_at
                 ? $screen->last_seen_at->diffInSeconds(now())
                 : PHP_INT_MAX;
@@ -26,6 +26,8 @@ class EvaluateScreenHealth implements ShouldQueue
                     "Ecrã {$screen->name} sem heartbeat.",
                     ['seconds' => $age]
                 );
+            } else {
+                \App\Models\OperationalEvent::where('dedupe_key',"screen:{$screen->id}:offline")->whereNull('resolved_at')->update(['resolved_at'=>now()]);
             }
         }
     }

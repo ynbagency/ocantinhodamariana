@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\DailyMenu;
 use App\Models\Publication;
 use App\Models\Screen;
+use App\Models\OperationalEvent;
 use Illuminate\Http\Request;
 
 class OperationController
@@ -12,10 +13,11 @@ class OperationController
     {
         abort_unless($request->user()->isOperator(), 403);
         $menu = DailyMenu::with('items')->whereDate('service_date', today())->first();
-        $publication = $menu ? Publication::with('attempts')->where('daily_menu_id',$menu->id)->latest('version')->first() : null;
+        $publication = $menu ? Publication::with('attempts')->where('daily_menu_id',$menu->id)->where('status','published')->latest('version')->first() : null;
         $screens = Screen::orderBy('name')->get();
         $snapshot=$publication?->payload;
-        return view('operation.dashboard', compact('menu','publication','screens','snapshot'));
+        $alerts=OperationalEvent::whereNull('resolved_at')->whereIn('type',['schedule_expired','schedule_failed','screen_offline','social_publish_failed'])->latest()->limit(10)->get();
+        return view('operation.dashboard', compact('menu','publication','screens','snapshot','alerts'));
     }
 
     public function preview(Request $request, string $channel)

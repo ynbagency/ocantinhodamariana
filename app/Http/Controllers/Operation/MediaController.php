@@ -32,7 +32,7 @@ class MediaController
         try {
             $variants=$derivatives->execute($disk,$path,$file->getMimeType());
             MediaAsset::create([
-                'title'=>$data['title'] ?: pathinfo($file->getClientOriginalName(),PATHINFO_FILENAME),
+                'title'=>($data['title']??null) ?: pathinfo($file->getClientOriginalName(),PATHINFO_FILENAME),
                 'disk'=>$disk,'path'=>$path,
                 'thumb_path'=>$variants['thumb_path'],'web_path'=>$variants['web_path'],
                 'signage_path'=>$variants['signage_path'],

@@ -1,5 +1,8 @@
-<!doctype html><html lang="pt"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="stylesheet" href="/app.css"><title>Fotografias · O Cantinho</title><body><main class="app-shell">
+@extends('operation.layout')
+@section('title','Fotografias')
+@section('shell','app-shell')
+@section('content')
+
 <header class="topbar"><div><small>OPERAÇÃO</small><h1>Fotografias</h1></div><a class="btn secondary" href="{{ route('operation.dashboard') }}">Voltar</a></header>
 @if(session('status'))<div class="notice">{{ session('status') }}</div>@endif
 @if($errors->any())<div class="alert error">{{ $errors->first() }}</div>@endif
@@ -20,4 +23,5 @@
 <label>Y<input type="number" name="focal_y" min="0" max="1" step=".01" value="{{ $asset->focal_y }}"></label>
 <button class="btn secondary">Guardar foco</button></form></div></article>
 @empty<p>Ainda não existem fotografias.</p>@endforelse</div>
-{{ $assets->links() }}</section></main></body></html>
+{{ $assets->links() }}</section>
+@endsection

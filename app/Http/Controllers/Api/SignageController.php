@@ -24,6 +24,13 @@ class SignageController
         ])->header('Cache-Control','no-store');
 
         $editorial=$playlist->build();
+        $dailyPhotos=[];
+        foreach($publication->payload['items']??[] as $item){
+            if(!($item['available']??true)||empty($item['media_asset_id'])) continue;
+            $asset=MediaAsset::find($item['media_asset_id']); if(!$asset)continue;
+            $dailyPhotos[]=['type'=>'food','eyebrow'=>'PRATOS DE HOJE','title'=>$item['name'],'body'=>$item['description']??'','duration'=>12,'media'=>['id'=>$asset->id,'local_path'=>'media/'.$asset->id.'.'.strtolower(pathinfo($asset->preferredPath('signage'),PATHINFO_EXTENSION)),'focal_x'=>$item['photo']['focal_x']??.5,'focal_y'=>$item['photo']['focal_y']??.5]];
+        }
+        $editorial=array_merge($dailyPhotos,$editorial);
         $assets=[];
         foreach($editorial as &$slide){
             if(empty($slide['media']['id'])) continue;

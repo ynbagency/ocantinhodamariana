@@ -4,7 +4,7 @@
 @if($publication && collect($publication->payload['items']??[])->contains(fn($item)=>$item['available']??true))
 <h2>Disponível hoje</h2>
 @foreach(($publication->payload['items']??[]) as $i)
-@if($i['available']??true)<div class="menu-line"><strong>{{$i['name']}}</strong></div>@endif
+@if($i['available']??true) @include('public.daily-item',['item'=>$i]) @endif
 @endforeach
 @elseif($publication)
 <p class="muted">Pergunte-nos pelas opções disponíveis para takeaway.</p>

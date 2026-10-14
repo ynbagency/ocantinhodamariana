@@ -1,1 +1,51 @@
-<!doctype html><html lang="pt"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/app.css"><title>Operação — O Cantinho da Mariana</title><main class="shell"><div class="topbar"><div><div class="brand">O CANTINHO DA MARIANA</div><h1 style="font-size:38px;margin-top:7px">Bom dia, {{ auth()->user()->name }}.</h1></div><form method="post" action="{{ route('logout') }}">@csrf<button class="btn" type="submit">Sair</button></form></div><section class="card"><div class="topbar"><div><div class="muted">Hoje · {{ now()->translatedFormat('d F') }}</div><h2 style="margin:3px 0">Pratos de hoje</h2></div>@if($publication)<span class="badge ok"><span class="dot"></span>Publicado</span>@else<span class="badge warn"><span class="dot"></span>Por publicar</span>@endif</div>@if($snapshot)@foreach(collect($snapshot['items']??[])->where('available',true) as $item)<div class="dish"><strong>{{ $item['name'] }}</strong><div class="muted">{{ $item['category']==='sopa'?'Sopa':'Prato' }}</div></div>@endforeach@if(($snapshot['price_cents']??null)!==null)<div class="price" style="margin-top:14px">{{ number_format(($snapshot['price_cents']??null)/100,2,',',' ') }} €</div>@endif@else<p class="muted">Ainda não definiu os pratos de hoje.</p>@endif<a class="btn primary full" style="margin-top:14px" href="{{ route('operation.edit') }}">{{ $menu?'Editar pratos de hoje':'Definir pratos de hoje' }}</a></section><section class="grid grid2"><a class="btn soft" href="{{ route('operation.preview',['channel'=>'tv']) }}">Ver TV</a><a class="btn soft" href="{{ route('operation.preview',['channel'=>'site']) }}">Ver site</a></section><section class="card"><h2>Publicação</h2>@if($publication)@foreach($publication->attempts as $attempt)<div class="statusrow"><span>{{ ucfirst($attempt->channel) }}</span><span class="badge {{ $attempt->status==='published'?'ok':'warn' }}"><span class="dot"></span>{{ $attempt->status==='published'?'Publicado':'Pendente' }}</span></div>@endforeach@else<p class="muted">Quando publicar, o estado de cada canal aparece aqui.</p>@endif</section><section class="card"><h2>TV do restaurante</h2>@forelse($screens as $screen)@php($health=$screen->health())<div class="statusrow"><div><strong>{{ $screen->name }}</strong><div class="muted">{{ $screen->last_seen_at?'Último contacto '.$screen->last_seen_at->diffForHumans():'Ainda sem contacto' }}</div></div><span class="badge {{ $health==='online'?'ok':($health==='warning'?'warn':'off') }}"><span class="dot"></span>{{ $health==='online'?'Online':($health==='warning'?'Aviso':'Offline') }}</span></div>@empty<p class="muted">Nenhum Raspberry Pi registado.</p>@endforelse</section><section class="grid grid2"><a class="card" href="{{ route('operation.media') }}"><strong>Fotografias</strong><p class="muted">Biblioteca de conteúdos.</p></a><div class="card"><strong>Promoções</strong><p class="muted">Campanhas e mensagens.</p></div><div class="card"><strong>Menu</strong><p class="muted">Carta permanente.</p></div><a class="card" href="{{ route('operation.loyalty') }}"><strong>Clientes</strong><p class="muted">Fidelização.</p></a></section></main><nav class="nav"><div class="navin"><a href="{{ route('operation.dashboard') }}">Início</a><a href="{{ route('operation.edit') }}">Hoje</a><a href="{{ route('operation.editorial') }}">Conteúdos</a><a href="{{ route('operation.settings') }}">Definições</a></div></nav></html>
+@extends('operation.layout')
+@section('title','Início — Operação')
+@section('shell','shell')
+@section('content')
+<p class="brand">OPERAÇÃO</p><h1 class="dashboard-greeting">Olá, {{ auth()->user()->name }}.</h1>
+<p class="muted">{{ now()->translatedFormat('l, d F') }}</p>
+<section class="card"><div class="topbar"><h2>Pratos de hoje</h2><span class="badge {{ $publication?'ok':'warn' }}"><span class="dot"></span>{{ $publication?'Publicado':'Por publicar' }}</span></div>
+@if($publication)<p class="muted">Última publicação · {{ $publication->created_at->format('H:i') }}</p>@endif
+@php($available=collect($snapshot['items']??[])->where('available',true))
+@forelse($available as $item)
+<div class="dish"><strong>{{ $item['name'] }}</strong><div class="muted">{{ $item['category']==='sopa'?'Sopa':'Prato' }}</div></div>
+@empty<p class="muted">{{ $publication?'Os pratos publicados estão indisponíveis.':'Ainda não publicou o menu de hoje.' }}</p>@endforelse
+@if($available->isNotEmpty() && ($snapshot['price_cents']??null)!==null)<div class="price">{{ number_format($snapshot['price_cents']/100,2,',',' ') }} €</div>@endif
+<a class="btn primary full" style="margin-top:16px" href="{{ route('operation.edit') }}">{{ $menu?'Editar pratos de hoje':'Definir pratos de hoje' }}</a>
+</section>
+@if($menu?->scheduled_at)
+<div class="notice" role="status"><strong>Publicação agendada · {{ $menu->scheduled_at->format('H:i') }}</strong><p>O rascunho guardado será publicado hoje. A versão pública atual mantém-se até essa hora.</p><a href="{{ route('operation.edit') }}">Rever ou cancelar agendamento</a></div>
+@elseif($menu?->status==='draft' && $publication)
+<div class="alert" role="status">Tem um rascunho em preparação. Abaixo está o menu que os clientes estão a ver.</div>
+@endif
+@if($alerts->isNotEmpty())
+<section class="card operational-alerts" aria-labelledby="avisos"><h2 id="avisos">Precisa de atenção</h2>
+@foreach($alerts as $alert)
+@php($message=match($alert->type){'schedule_expired'=>'Um agendamento terminou sem publicar. Reveja os pratos de hoje.','schedule_failed'=>'Uma publicação agendada não foi concluída. Reveja e publique os pratos de hoje.','screen_offline'=>'A TV está sem contacto. Confirme se está ligada e, se necessário, contacte o apoio.','social_publish_failed'=>'Uma publicação nas redes sociais falhou. O site e o conteúdo da TV continuam disponíveis.'})
+<p>{{ $message }} <small class="muted">{{ $alert->created_at->diffForHumans() }}</small></p>
+@endforeach
+<a class="btn soft" href="{{ route('operation.edit') }}">Rever pratos de hoje</a></section>
+@endif
+
+<section class="grid grid2"><a class="btn soft" href="{{ route('operation.preview',['channel'=>'tv']) }}">Pré-visualizar TV</a><a class="btn soft" href="{{ route('operation.preview',['channel'=>'site']) }}">Pré-visualizar site</a></section>
+<section class="card"><h2>TV do restaurante</h2>
+@forelse($screens as $screen)
+@php($health=$screen->health())
+<div class="statusrow"><div><strong>{{ $screen->name }}</strong><div class="muted">{{ $screen->last_seen_at?'Último contacto '.$screen->last_seen_at->diffForHumans():'Ainda sem contacto' }}</div></div><span class="badge {{ $health==='online'?'ok':($health==='warning'?'warn':'off') }}"><span class="dot"></span>{{ $health==='online'?'Online':($health==='warning'?'Aviso':'Offline') }}</span></div>
+@empty<p class="muted">A TV ainda não foi registada.</p>@endforelse</section>
+<section class="card"><h2>Publicação por canal</h2>
+@if($publication)
+@foreach($publication->attempts as $attempt)
+@php($label=['website'=>'Site','signage'=>'Conteúdo da TV','facebook'=>'Facebook','instagram'=>'Instagram'][$attempt->channel]??'Canal')
+<div class="statusrow"><span>{{ $label }}</span><span class="badge {{ $attempt->status==='published'?'ok':'warn' }}"><span class="dot"></span>{{ $attempt->status==='published'?'Publicado':($attempt->status==='failed'?'Precisa de atenção':'Pendente') }}</span></div>
+@endforeach
+<p class="muted" style="margin-top:12px">As redes sociais aguardam configuração. O estado da TV acima confirma o contacto com o restaurante.</p>
+@else<p class="muted">Os canais aparecem depois da primeira publicação.</p>@endif
+</section>
+<section class="grid grid2 dashboard-shortcuts" aria-label="Outras tarefas">
+<a class="card" href="{{ route('operation.media') }}"><strong>Fotografias</strong><p class="muted">Adicionar e escolher imagens.</p></a>
+<a class="card" href="{{ route('operation.editorial') }}"><strong>Conteúdos e promoções</strong><p class="muted">Mensagens e histórias da TV.</p></a>
+<a class="card" href="{{ route('operation.loyalty') }}"><strong>Clientes</strong><p class="muted">Registar visitas e recompensas.</p></a>
+<a class="card" href="{{ route('operation.settings') }}"><strong>Dados do restaurante</strong><p class="muted">Telefone, morada e horário.</p></a>
+</section>
+@endsection

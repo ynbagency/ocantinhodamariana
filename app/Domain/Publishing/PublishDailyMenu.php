@@ -21,9 +21,11 @@ class PublishDailyMenu
             $payload = $snapshot ?? [
                 'date' => $menu->service_date->toDateString(),
                 'price_cents' => $menu->price_cents,
-                'items' => $menu->items()->orderBy('position')->get([
-                    'category', 'name', 'description', 'available', 'position',
-                ])->toArray(),
+                'items' => $menu->items()->with('media')->orderBy('position')->get()->map(function($item){
+                    $values=$item->only(['category','name','description','available','position','menu_item_id','media_asset_id','allergens']);
+                    $values['photo']=$item->media ? ['web_url'=>\Illuminate\Support\Facades\Storage::disk($item->media->disk)->url($item->media->preferredPath('web')),'focal_x'=>(float)$item->media->focal_x,'focal_y'=>(float)$item->media->focal_y] : null;
+                    return $values;
+                })->all(),
             ];
 
             $publication = Publication::create([

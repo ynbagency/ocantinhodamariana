@@ -27,13 +27,15 @@ class DailyMenuController
             ? Publication::with('attempts')->where('daily_menu_id', $menu->id)->orderByDesc('version')->first()
             : null;
 
-        return view('operation.daily-menu', compact('menu', 'publication'));
+        $catalogue=\App\Models\MenuItem::visible()->with('category')->orderBy('name')->get();
+        $media=\App\Models\MediaAsset::latest()->get();
+        return view('operation.daily-menu', compact('menu', 'publication','catalogue','media'));
     }
 
     public function store(Request $request)
     {
         abort_unless($request->user()->isOperator(), 403);
-        $data = $request->validate([
+        $rules=[
             'soup' => 'nullable|string|max:160',
             'dish1' => 'nullable|string|max:160',
             'dish2' => 'nullable|string|max:160',
@@ -42,12 +44,24 @@ class DailyMenuController
             'soup_available' => 'nullable|boolean',
             'dish1_available' => 'nullable|boolean',
             'dish2_available' => 'nullable|boolean',
-        ]);
-        if(($data['intent']??'draft')==='publish' && !collect(['soup','dish1','dish2'])->contains(fn($key)=>filled($data[$key]??null) && ($data[$key.'_available']??true))) {
+        ];
+        foreach(['soup','dish1','dish2'] as $key){$rules[$key.'_source_id']='nullable|integer|exists:menu_items,id';$rules[$key.'_photo_id']='nullable|integer|exists:media_assets,id';}
+        $data=$request->validate($rules);
+        $prepared=[];
+        foreach(['soup'=>'sopa','dish1'=>'prato','dish2'=>'prato'] as $key=>$category){
+            $source=null;
+            if(!empty($data[$key.'_source_id'])){
+                $source=\App\Models\MenuItem::visible()->with('category')->find($data[$key.'_source_id']);
+                if(!$source || $source->category->kind!==($key==='soup'?'soup':'dish')) throw \Illuminate\Validation\ValidationException::withMessages([$key.'_source_id'=>'Este prato não está disponível para esta seleção.']);
+            }
+            $name=$source?->name??($data[$key]??null);
+            if(filled($name)) $prepared[]=['category'=>$category,'name'=>$name,'description'=>$source?->description,'allergens'=>$source?->allergens??[],'menu_item_id'=>$source?->id,'media_asset_id'=>array_key_exists($key.'_photo_id',$data)?$data[$key.'_photo_id']:$source?->media_asset_id,'available'=>(bool)($data[$key.'_available']??true),'position'=>count($prepared)];
+        }
+        if(($data['intent']??'draft')==='publish' && !collect($prepared)->contains('available',true)) {
             throw \Illuminate\Validation\ValidationException::withMessages(['publish'=>'É necessário pelo menos um prato disponível.']);
         }
 
-        DB::transaction(function () use ($data, $request) {
+        DB::transaction(function () use ($data, $request,$prepared) {
             $menu = DailyMenu::firstOrCreate(
                 ['service_date' => today()->toDateString()],
                 ['created_by' => $request->user()->id]
@@ -61,17 +75,7 @@ class DailyMenuController
                 'price_cents' => isset($data['price']) ? (int) round($data['price'] * 100) : null,
             ]);
             $menu->items()->delete();
-            $position = 0;
-            foreach (['soup' => 'sopa', 'dish1' => 'prato', 'dish2' => 'prato'] as $key => $category) {
-                if (filled($data[$key] ?? null)) {
-                    $menu->items()->create([
-                        'category' => $category,
-                        'name' => $data[$key],
-                        'position' => $position++,
-                        'available' => (bool)($data[$key.'_available']??true),
-                    ]);
-                }
-            }
+            foreach($prepared as $item) $menu->items()->create($item);
             if(($data['intent']??'draft')==='publish') app(PublishDailyMenu::class)->execute($menu);
         });
 
@@ -114,7 +118,7 @@ class DailyMenuController
         DB::transaction(function () use ($data,$request) {
             $menu=DailyMenu::whereDate('service_date',today())->lockForUpdate()->firstOrFail();
             if(!$menu->items()->where('available',true)->exists()) throw \Illuminate\Validation\ValidationException::withMessages(['scheduled_at'=>'Guarde pelo menos um prato disponível antes de agendar.']);
-            $menu->update(['scheduled_at'=>\Illuminate\Support\Carbon::parse($data['scheduled_at']),'status'=>'scheduled']);
+            $menu->update(['scheduled_at'=>\Illuminate\Support\Carbon::parse($data['scheduled_at'])->setTimezone(config('app.timezone')),'status'=>'scheduled']);
             app(\App\Domain\Operations\Audit::class)->write('daily-menu.scheduled',$menu,['scheduled_at'=>$menu->scheduled_at->toIso8601String()],$request);
         });
         return back()->with('success','Publicação agendada. Editar e guardar o rascunho cancela este agendamento.');

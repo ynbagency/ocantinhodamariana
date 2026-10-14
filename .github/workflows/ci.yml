@@ -17,6 +17,13 @@ jobs:
         with: {node-version: '22'}
       - name: Public cache policy tests
         run: node --test tests/service-worker.test.cjs
+      - name: Install browser test dependencies
+        run: npm ci --prefix tests/browser
+      - name: Install headless Chromium
+        working-directory: tests/browser
+        run: npx playwright install --with-deps chromium
+      - name: Mobile backoffice workflow
+        run: node tests/browser/mobile.cjs
       - name: Python signage tests
         run: PYTHONPATH=device/agent python3 -m unittest discover -s device/agent/tests -v
       - name: Required production files

@@ -23,6 +23,12 @@ class DailyOperationTest extends TestCase
   $this->post('/operacao/pratos-de-hoje',['intent'=>'publish'])->assertSessionHasErrors('publish');
   $this->assertSame(1,Publication::count());
  }
+ public function test_draft_availability_is_explicit_and_all_unavailable_cannot_be_published(): void {
+  $this->post('/operacao/pratos-de-hoje',['dish1'=>'Prato esgotado','dish1_available'=>0,'intent'=>'draft'])->assertRedirect();
+  $this->assertFalse(DailyMenu::first()->items->first()->available);
+  $this->post('/operacao/pratos-de-hoje',['dish1'=>'Prato esgotado','dish1_available'=>0,'intent'=>'publish'])->assertSessionHasErrors('publish');
+  $this->assertSame(0,Publication::count());
+ }
  public function test_yesterday_copy_is_a_draft_and_never_overwrites_existing_items(): void {
   $now=now(); $this->travelTo($now->copy()->subDay());
   $this->save('Menu de ontem','publish');
@@ -51,6 +57,14 @@ class DailyOperationTest extends TestCase
   $this->assertFalse(Publication::latest('version')->first()->payload['items'][0]['available']);
   $this->assertTrue(Publication::where('version',1)->first()->payload['items'][0]['available']);
   $this->get('/')->assertDontSee('Prato público')->assertDontSee('Rascunho privado')->assertSee('Pergunte-nos')->assertDontSee('12,50');
+  $this->get('/menu')->assertSee('Pergunte-nos')->assertDontSee('Prato público');
+  $this->get('/takeaway')->assertSee('opções disponíveis')->assertDontSee('Prato público');
+  \Illuminate\Support\Facades\Storage::fake('local');
+  $screen=\App\Models\Screen::create(['device_id'=>'tv-test','name'=>'TV','token_hash'=>hash('sha256','test-secret'),'enabled'=>true]);
+  $headers=['X-Device-ID'=>$screen->device_id,'Authorization'=>'Bearer test-secret'];
+  $manifest=$this->getJson('/api/signage/manifest/'.$screen->device_id,$headers)->assertOk()->json();
+  $asset=collect($manifest['assets'])->firstWhere('path','index.html');
+  $this->get($asset['url'],$headers)->assertOk()->assertSee('Pergunte-nos pelos pratos disponíveis')->assertDontSee('12,50');
   $this->get('/operacao/pratos-de-hoje')->assertOk()->assertSee('Voltar a disponibilizar');
   $this->post('/operacao/pratos-de-hoje/disponibilidade',['version'=>1,'position'=>0,'available'=>1])->assertSessionHasErrors('availability');
   $this->post('/operacao/pratos-de-hoje/disponibilidade',['version'=>2,'position'=>0,'available'=>1])->assertRedirect();
